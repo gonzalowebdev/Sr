@@ -1,0 +1,7 @@
+<resources>
+    <color name="text">#ECEFF4</color>
+    <color name="text2">#9AA1AF</color>
+    <color name="disabled">#5A606D</color>
+    <color name="white">#FFFFFF</color>
+    <color name="accent">#FF5A4D</color>
+</resources>

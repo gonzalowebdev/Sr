@@ -1,0 +1,21 @@
+<resources>
+    <style name="Theme.Sr" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@drawable/bg_main</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:textColorPrimary">@color/text</item>
+        <item name="android:colorAccent">@color/accent</item>
+    </style>
+    <style name="Theme.Sr.Player" parent="Theme.Sr">
+        <item name="android:windowBackground">@android:color/black</item>
+    </style>
+    <style name="Label">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">14dp</item>
+        <item name="android:textSize">11sp</item>
+        <item name="android:textColor">@color/text2</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:letterSpacing">0.1</item>
+    </style>
+</resources>

@@ -1,0 +1,45 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build
+        shell: bash
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon --console=plain assembleRelease 2>&1 | tee build.log
+
+      - name: Publicar APK
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp app/build/outputs/apk/release/app-release.apk Sr.apk
+          gh release delete latest --cleanup-tag --yes || true
+          gh release delete build-error --cleanup-tag --yes || true
+          gh release create latest Sr.apk --target "$GITHUB_SHA" --title "Sr (build $GITHUB_RUN_NUMBER)" --notes "APK firmado, listo para instalar."
+
+      - name: Reportar error
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete build-error --cleanup-tag --yes || true
+          { echo '```'; grep -E "^(e: |FAILURE|\* What went wrong|> )" -A2 build.log | head -150; echo '```'; } > err.md
+          gh release create build-error --target "$GITHUB_SHA" --prerelease --title "Build error" --notes-file err.md

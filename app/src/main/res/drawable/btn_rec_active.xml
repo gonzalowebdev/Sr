@@ -1,0 +1,44 @@
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_pressed="true">
+        <layer-list>
+            <item>
+                <shape android:shape="oval">
+                    <gradient android:angle="270" android:startColor="#2A2D34" android:endColor="#5E6371" />
+                    <stroke android:width="2dp" android:color="#14161A" />
+                </shape>
+            </item>
+            <item android:width="116dp" android:height="116dp" android:gravity="center">
+                <shape android:shape="oval">
+                    <gradient android:angle="270" android:startColor="#5E120C" android:endColor="#9A2216" />
+                </shape>
+            </item>
+            <item android:width="42dp" android:height="42dp" android:gravity="center">
+                <shape android:shape="rectangle">
+                    <gradient android:angle="270" android:startColor="#C9CCD4" android:endColor="#9DA1AC" />
+                    <corners android:radius="10dp" />
+                </shape>
+            </item>
+        </layer-list>
+    </item>
+    <item>
+        <layer-list>
+            <item>
+                <shape android:shape="oval">
+                    <gradient android:angle="270" android:startColor="#6A6F7D" android:endColor="#2A2D34" />
+                    <stroke android:width="2dp" android:color="#14161A" />
+                </shape>
+            </item>
+            <item android:width="116dp" android:height="116dp" android:gravity="center">
+                <shape android:shape="oval">
+                    <gradient android:angle="270" android:startColor="#7A1710" android:endColor="#B8281A" />
+                </shape>
+            </item>
+            <item android:width="42dp" android:height="42dp" android:gravity="center">
+                <shape android:shape="rectangle">
+                    <gradient android:angle="270" android:startColor="#FFFFFF" android:endColor="#D8DBE2" />
+                    <corners android:radius="10dp" />
+                </shape>
+            </item>
+        </layer-list>
+    </item>
+</selector>
