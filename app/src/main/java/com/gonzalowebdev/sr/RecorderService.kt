@@ -165,10 +165,53 @@ class RecorderService : Service() {
 
     private fun stamp() = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
 
-    private fun beginRecording() {
+    private var curLandscape = false
+    private var rotating = false
+    private var dlRegistered = false
+
+    @Suppress("DEPRECATION")
+    private fun displaySize(): android.graphics.Point {
+        val d = getSystemService(DisplayManager::class.java).getDisplay(android.view.Display.DEFAULT_DISPLAY)
+        val pt = android.graphics.Point()
+        d.getRealSize(pt)
+        return pt
+    }
+
+    private val dl = object : DisplayManager.DisplayListener {
+        override fun onDisplayAdded(displayId: Int) {}
+        override fun onDisplayRemoved(displayId: Int) {}
+        override fun onDisplayChanged(displayId: Int) {
+            if (displayId != 0 || mode != 1 || stopping || rotating || vd == null || venc == null) return
+            val sz = displaySize()
+            if ((sz.x > sz.y) != curLandscape) rotateSegment()
+        }
+    }
+
+    /** Al rotar la pantalla se cierra el archivo actual y se sigue en uno nuevo con la orientación correcta. */
+    private fun rotateSegment() {
+        rotating = true
+        Thread {
+            closeRecording(true)
+            main.post {
+                try {
+                    if (mode == 1 && !stopping && vd != null) beginRecording(true)
+                } catch (e: Exception) {
+                    fail(e.message)
+                }
+                rotating = false
+            }
+        }.start()
+    }
+
+    private fun beginRecording(reuse: Boolean = false) {
         val p = proj ?: return
         val st = Settings.of(this)
-        val phys = realSize(this)
+        val phys = displaySize()
+        curLandscape = phys.x > phys.y
+        if (!dlRegistered) {
+            getSystemService(DisplayManager::class.java).registerDisplayListener(dl, main)
+            dlRegistered = true
+        }
         var hevc = st.hevc && Encoders.hasHevc()
         var plan = Encoders.plan(phys, st.shortSide, st.fps, hevc, st.quality)
         if (plan.info == null && hevc) {
@@ -210,11 +253,17 @@ class RecorderService : Service() {
             audio.second.start()
             aThread = Thread({ audioLoop(audio.first, audio.second, s) }, "sr-audio").also { it.start() }
         }
-        vd = p.createVirtualDisplay(
-            "sr", plan.w, plan.h, resources.displayMetrics.densityDpi,
-            DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, surface, null, null
-        )
-        startedAt = SystemClock.elapsedRealtime()
+        val old = vd
+        if (reuse && old != null) {
+            old.resize(plan.w, plan.h, resources.displayMetrics.densityDpi)
+            old.surface = surface
+        } else {
+            vd = p.createVirtualDisplay(
+                "sr", plan.w, plan.h, resources.displayMetrics.densityDpi,
+                DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, surface, null, null
+            )
+            startedAt = SystemClock.elapsedRealtime()
+        }
         updateFg("${plan.w}×${plan.h} · ${if (hevc) "H.265" else "H.264"} · ${plan.fps} fps", true, true)
         onChange?.invoke()
     }
@@ -360,10 +409,14 @@ class RecorderService : Service() {
     }
 
     /** Cierra encoders, muxer y archivo. Devuelve el Uri si el video quedó válido. */
-    private fun closeRecording(): Uri? {
+    private fun closeRecording(keepVd: Boolean = false): Uri? {
         stopFlag = true
-        safe { vd?.release() }
-        vd = null
+        if (keepVd) {
+            safe { vd?.surface = null }
+        } else {
+            safe { vd?.release() }
+            vd = null
+        }
         safe { venc?.signalEndOfInputStream() }
         safe { vThread?.join(4000) }
         safe { aThread?.join(4000) }
@@ -497,6 +550,10 @@ class RecorderService : Service() {
 
     private fun endAll() {
         main.removeCallbacksAndMessages(null)
+        if (dlRegistered) {
+            safe { getSystemService(DisplayManager::class.java).unregisterDisplayListener(dl) }
+            dlRegistered = false
+        }
         safe { vd?.release() }
         vd = null
         safe { reader?.close() }
